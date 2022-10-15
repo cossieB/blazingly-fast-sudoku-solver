@@ -70,4 +70,49 @@ impl Solver {
         }
         arr
     }
+    pub fn solve(&mut self) {
+        let mut blanks = vec![];
+        for cell in &self.array {
+            if !cell.frozen {
+                cell.value = '.';
+                blanks.push(cell)
+            }
+        }
+        let position = 0;
+        let mut direction = 0i8;
+
+        loop {
+            let cell = blanks[position];
+            let result = self.place_number(cell.cell_number, direction);
+            direction = if result == '.' {-1} else {1};
+            cell.value = result;
+        }
+    }
+    fn place_number(&self, cell_number: u8, direction: i8) -> char {
+        let cell = &self.array[cell_number as usize];
+        let mut num = if direction == 1 {1} else {cell.value.to_digit(10).unwrap()};
+
+        while num <=9 {
+            let mut check_column = true;
+            let mut check_row = true;
+            let mut check_region = true;
+            
+            for item in &self.array {
+                if item.column == cell.column && item.value.to_string() == num.to_string() {
+                    check_column = false;
+                }
+                if item.row == cell.row && item.value.to_string() == num.to_string() {
+                    check_row = false;
+                }
+                if item.region == cell.region && item.value.to_string() == num.to_string() {
+                    check_region = false;
+                }
+            }
+            if check_region && check_column && check_row {
+                return num.to_string().chars().next().unwrap()
+            }
+            num += 1;
+        }
+        return '.'
+    }
 }
