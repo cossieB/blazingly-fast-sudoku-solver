@@ -1,5 +1,6 @@
 use regex::Regex;
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct Cell {
     value: char,
     row: u8,
@@ -13,7 +14,6 @@ pub enum ValidationRes {
     Bad(String)
 }
 pub struct Solver {
-    puzzle_string: String,
     pub array: Vec<Cell>,
 }
 
@@ -35,7 +35,6 @@ impl Solver {
             ValidationRes::Bad(err) => panic!("{err}"),
             ValidationRes::Good => {
                 Solver {
-                    puzzle_string: puzzle_string.to_string(),
                     array: Solver::get_array(puzzle_string)
                 }
             }
@@ -72,25 +71,38 @@ impl Solver {
     }
     pub fn solve(&mut self) {
         let mut blanks = vec![];
-        for cell in &self.array {
-            if !cell.frozen {
-                cell.value = '.';
-                blanks.push(cell)
+
+        for elem in &mut self.array {
+            if !elem.frozen {
+                // elem.value = '.';
+                blanks.push(elem.clone())
             }
         }
-        let position = 0;
-        let mut direction = 0i8;
+        let mut position = 0i8;
+        let mut direction = 1;
 
         loop {
-            let cell = blanks[position];
-            let result = self.place_number(cell.cell_number, direction);
+            let index: usize = position.try_into().unwrap();
+            let temp = &mut blanks[index];
+            let result = self.place_number(temp.cell_number, direction);
             direction = if result == '.' {-1} else {1};
+            let index: usize = temp.cell_number.try_into().unwrap();
+            let cell = &mut self.array[index];
             cell.value = result;
+            position += direction;
+            if position < 0 || position >= blanks.len().try_into().unwrap() {break}
         }
     }
     fn place_number(&self, cell_number: u8, direction: i8) -> char {
         let cell = &self.array[cell_number as usize];
-        let mut num = if direction == 1 {1} else {cell.value.to_digit(10).unwrap()};
+        let mut num;
+
+        if direction == 1 {
+            num = 1
+        }
+        else {
+            num = cell.value.to_digit(10).unwrap();
+        }
 
         while num <=9 {
             let mut check_column = true;
@@ -114,5 +126,12 @@ impl Solver {
             num += 1;
         }
         return '.'
+    }
+    pub fn current_string(&self) -> String {
+        let mut output = String::new();
+        for cell in &self.array {
+            output.push(cell.value)
+        }
+        output
     }
 }
